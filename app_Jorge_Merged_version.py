@@ -5,7 +5,7 @@ import plotly.express as px
 import numpy as np
 
 # Load your dataset (update the path accordingly)
-df = pd.read_csv("/Users/jorgemartinez/Documents/Python_Shiny_Project_New_Denis_Version/shopping_trends.csv")
+df = pd.read_csv("shopping_trends.csv")
 
 # Handling missing values: Fill NaNs or drop them based on the context
 df.fillna(0, inplace=True)  # Replace NaNs with 0 (or use dropna() if preferred)
