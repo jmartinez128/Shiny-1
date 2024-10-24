@@ -44,15 +44,7 @@ app_ui = ui.page_sidebar(
                 output_widget("discount_promo_impact")
             ),
             output_widget("subscription_discount_correlation")
-        ),
-        ui.nav_panel("Multi-factor Analysis",
-            output_widget("multi_factor_spending_plot"),
-            ui.output_text("multi_factor_insights")
-        ),
-        ui.nav_panel("Hypothesis Testing",
-            ui.output_text("hypothesis_test_results"),
-            output_widget("hypothesis_visualization")
-        )
+        ),  
     )
 )
 
@@ -99,16 +91,40 @@ def server(input, output, session):
         category_df = filtered_df.groupby("Category")["Purchase_Amount_USD"].mean().reset_index()
         fig = px.bar(category_df, x="Category", y="Purchase_Amount_USD", title="Category Spending Comparison")
         return fig
-
-    # Seasonal category heatmap
+    
+# Seasonal category heatmap
     @output
     @render_widget
     def seasonal_category_heatmap():
         filtered_df = apply_filters(df)
         seasonal_category_df = filtered_df.groupby(["Season", "Category"])["Purchase_Amount_USD"].mean().unstack()
-        fig = px.imshow(seasonal_category_df, title="Seasonal Category Spending Heatmap")
+        
+        # Calculate the overall mean across all seasons and categories
+        overall_mean = filtered_df["Purchase_Amount_USD"].mean()
+        
+        # Calculate percentage difference from mean
+        diff_from_mean = ((seasonal_category_df - overall_mean) / overall_mean * 100).round(1)
+        
+        # Create basic heatmap
+        fig = px.imshow(seasonal_category_df,
+                       title="Seasonal Category Spending Heatmap",
+                       color_continuous_scale=["white", "blue"],
+                       aspect="auto"
+                       )
+        
+        # Add annotations
+        for i in range(len(seasonal_category_df.index)):
+            for j in range(len(seasonal_category_df.columns)):
+                fig.add_annotation(
+                    x=j,
+                    y=i,
+                    text=f"{diff_from_mean.iloc[i, j]:.1f}%",
+                    showarrow=False,
+                    font=dict(color="black")
+                )
+        
         return fig
-
+    
     # Seasonal spending trends
     @output
     @render_widget
@@ -158,26 +174,6 @@ def server(input, output, session):
         fig = px.imshow(subscription_df, title="Subscription Status vs Discount Correlation")
         return fig
 
-    # Multi-factor analysis plot
-    @output
-    @render_widget
-    def multi_factor_spending_plot():
-        filtered_df = apply_filters(df)
-        fig = px.scatter_matrix(filtered_df, dimensions=["Age", "Purchase_Amount_USD", "Review_Rating"], color="Gender")
-        return fig
-
-    # # Hypothesis testing (example using t-test between male and female spending)
-    # @output
-    # @render_widget
-    # def hypothesis_visualization():
-    #     from scipy import stats
-    #     male_spending = df[df["Gender"] == "Male"]["Purchase_Amount_USD"]
-    #     female_spending = df[df["Gender"] == "Female"]["Purchase_Amount_USD"]
-    #     t_stat, p_val = stats.ttest_ind(male_spending, female_spending)
-    #     fig = px.bar(x=["Male", "Female"], y=[male_spending.mean(), female_spending.mean()],
-    #                  title=f"T-Test Results (p-value: {p_val:.4f})")
-    #     return fig
-
     # Key findings summary
     @output
     @render.text
@@ -190,17 +186,6 @@ def server(input, output, session):
     def category_season_insights():
         return "Category and season-related insights will be displayed here."
 
-    # Multi-factor analysis insights
-    @output
-    @render.text
-    def multi_factor_insights():
-        return "Multi-factor analysis insights will be displayed here."
-
-    #  Hypothesis test results summary
-    # @output
-    # @render.text
-    # def hypothesis_test_results():
-    #     return "Hypothesis testing between male and female spending is shown here."
 
 # Create the Shiny app
 app = App(app_ui, server)
