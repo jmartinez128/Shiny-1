@@ -1,6 +1,7 @@
-faicons
-shiny
-shinywidgets
-plotly
+shiny>=0.5.1
 pandas
-ridgeplot
+numpy
+plotly
+shinywidgets
+gunicorn
+python-multipart
